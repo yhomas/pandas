@@ -24,7 +24,10 @@ $(function () {
                         setInterval(function () {
                                 var x = (new Date()).getTime(), // current time
                                 y = Math.round(Math.random() * 100);
-                                series.addPoint([x, y], true, true);
+                                z = Math.round(Math.random() * 101);
+                                a = Math.round(Math.random() * 102);
+                                b = Math.round(Math.random() * 103);
+                                series.addPoint([x, y, z, a, b], true, true);
                         }, 1000);
                     }
                 }
@@ -57,21 +60,24 @@ $(function () {
 
                 series: [{
                     name: 'Random data',
-                    type: 'candle stick',
+                    type: 'candlestick',
                     data: (function () {
                       // generate an array of random data
-                      var data = [],
-                      time = (new Date()).getTime(),
-                      i;
+                          var data = [],
+                          time = (new Date()).getTime(),
+                          i;
 
-                      for (i = -999; i <= 0; i += 1) {
-                          data.push([
-                              time + i * 1000,
-                              Math.round(Math.random() * 100)
-                          ]);
-                      }
+                          for (i = -100; i <= 0; i += 1) {
+                              data.push([
+                                  time + i * 1000,
+                                  Math.round(Math.random() * 100),
+                                  Math.round(Math.random() * 101),
+                                  Math.round(Math.random() * 102),
+                                  Math.round(Math.random() * 103)
+                              ]);
+                          }
                           return data;
-                      }())
+                  }())
                 }]
         });
 });
