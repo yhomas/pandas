@@ -32,7 +32,8 @@ def index():
     chart = ph.serialize(df, chart_type="stock", title="chart", render_to='my-chart', output_type='json', grid=True)
     return template("charts.tpl", chart=chart)
 
-index()
+@route("/getchart")
+
 
 if __name__ == "__main__":
     run(host="0.0.0.0",reloader=True,port=9999)
