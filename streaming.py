@@ -10,6 +10,7 @@ To show heartbeat, replace [options] by -b or --displayHeartBeat
 
 import requests
 import json
+import os
 
 from optparse import OptionParser
 
@@ -26,8 +27,8 @@ def connect_to_stream():
     # Replace the following variables with your personal values 
     environment = "demo" # Replace this 'live' if you wish to connect to the live environment 
     domain = domainDict[environment] 
-    access_token = '3775ae1deeebd5840ef29c59eca4d2da-ed7527056834b03579b0d6de5903169e'
-    account_id = '5294867'
+    access_token = os.environ["access_token"]
+    account_id = os.environ["account_id"]
     instruments = 'USD_JPY' 
 
     try:
