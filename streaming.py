@@ -92,22 +92,21 @@ def demo(displayHeartbeat):
                 if DBLastTimestamp == None:
                     cur.execute("INSERT INTO onem VALUES(1,%s,%s,%s,%s,%s,%s)", (oneMStartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
                 else:
-                    print(match_min)
-                    if DBLastTimestamp.minute != match_min:
+                    if int(DBLastTimestamp.minute) != int(match_min):
                         cur.execute("INSERT INTO onem VALUES((SELECT MAX(id)+1 from onem),%s,%s,%s,%s,%s,%s)", (oneMStartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
                         conn.commit()
 
                     else:
-                        cur.execute("SELECT open,high,low,close FROM onem WHERE timestamp IN (SELECT MAX(timestamp) FROM onem")
+                        cur.execute("SELECT open,high,low,close FROM onem WHERE timestamp IN (SELECT MAX(timestamp) FROM onem)")
                         ohlc=cur.fetchone()
 
                         if ohlc[1] < rate:
-                            cur.execute("UPDATE onem SET high = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem", (rate,))
+                            cur.execute("UPDATE onem SET high = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem)", (rate,))
 
                         if ohlc[2] > rate:
-                            cur.execute("UPDATE onem SET low = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem", (rate,))
+                            cur.execute("UPDATE onem SET low = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem)", (rate,))
                             
-                        cur.execute("UPDATE onem SET close = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem", (rate,))
+                        cur.execute("UPDATE onem SET close = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem)", (rate,))
 
 
                 twoMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 2)*int(match_min))+":00.000000Z", msg["tick"]["time"])
