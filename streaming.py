@@ -82,6 +82,11 @@ def demo(displayHeartbeat):
                 match_hour = r_extract_digit.search(match_hour_obj.group(0)).group(0)
                 
                 oneMStartTime = re.sub(":\d{2}\.\d{6}Z", ":00.000000Z", msg["tick"]["time"])
+
+                cur.execute("SELECT timestamp FROM onem WHERE id IN (SELECT MAX(id) FROM onem)")
+                LastTimestamp=cur.fetchone()
+                print(type(LastTimestamp))
+
                 twoMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 2)*int(match_min))+":00.000000Z", msg["tick"]["time"])
                 threeMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 3)*int(match_min))+":00.000000Z", msg["tick"]["time"])
                 fiveMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 5)*int(match_min))+":00.000000Z", msg["tick"]["time"])
