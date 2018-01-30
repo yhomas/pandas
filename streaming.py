@@ -11,6 +11,7 @@ To show heartbeat, replace [options] by -b or --displayHeartBeat
 import requests
 import json
 import os
+import psycopg2
 
 from optparse import OptionParser
 
@@ -51,16 +52,24 @@ def demo(displayHeartbeat):
     if response.status_code != 200:
         print(response.text)
         return
+
+    conn = psycopg2.connect("host=postgres port=5432 dbname=fxdb user="+os.environ["postgres_user"])
+    cur =  conn.cursor()
+    print(cur)
+
     for line in response.iter_lines(1):
         if line:
             try:
                 line = line.decode('utf-8')
                 msg = json.loads(line)
+
             except Exception as e:
                 print("Caught exception when converting message into json\n" + str(e))
                 return
 
             if "instrument" in msg or "tick" in msg or displayHeartbeat:
+                cur.execute("INSERT INTO tick VALUES((SELECT MAX(id)+1 FROM tick),%s,%s,%s,%s)",(msg["tick"]["time"], msg["tick"]["instrument"], msg["tick"]["bid"], msg["tick"]["ask"],))
+                conn.commit()
                 print(line)
 
 def main():
