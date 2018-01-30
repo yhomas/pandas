@@ -13,6 +13,7 @@ import json
 import os
 import psycopg2
 import re
+import datetime
 
 from optparse import OptionParser
 
@@ -74,6 +75,8 @@ def demo(displayHeartbeat):
                 cur.execute("INSERT INTO tick VALUES((SELECT MAX(id)+1 FROM tick),%s,%s,%s,%s)",(msg["tick"]["time"], msg["tick"]["instrument"], msg["tick"]["bid"], msg["tick"]["ask"],))
                 conn.commit()
                 
+                rate=msg["tick"]["bid"]
+
                 # exam) 2018-01-30T09:44:49.976256Z
                 match_min_obj = r_extract_min.search(msg["tick"]["time"])
                 match_hour_obj = r_extract_hour.search(msg["tick"]["time"])
@@ -83,9 +86,29 @@ def demo(displayHeartbeat):
                 
                 oneMStartTime = re.sub(":\d{2}\.\d{6}Z", ":00.000000Z", msg["tick"]["time"])
 
-                cur.execute("SELECT timestamp FROM onem WHERE id IN (SELECT MAX(id) FROM onem)")
-                LastTimestamp=cur.fetchone()
-                print(type(LastTimestamp))
+                cur.execute("SELECT MAX(timestamp) FROM onem")
+                DBLastTimestamp=cur.fetchone()[0]
+
+                if DBLastTimestamp == None:
+                    cur.execute("INSERT INTO onem VALUES(1,%s,%s,%s,%s,%s,%s)", (oneMStartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
+                else:
+                    print(match_min)
+                    if DBLastTimestamp.minute != match_min:
+                        cur.execute("INSERT INTO onem VALUES((SELECT MAX(id)+1 from onem),%s,%s,%s,%s,%s,%s)", (oneMStartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
+                        conn.commit()
+
+                    else:
+                        cur.execute("SELECT open,high,low,close FROM onem WHERE timestamp IN (SELECT MAX(timestamp) FROM onem")
+                        ohlc=cur.fetchone()
+
+                        if ohlc[1] < rate:
+                            cur.execute("UPDATE onem SET high = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem", (rate,))
+
+                        if ohlc[2] > rate:
+                            cur.execute("UPDATE onem SET low = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem", (rate,))
+                            
+                        cur.execute("UPDATE onem SET close = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem", (rate,))
+
 
                 twoMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 2)*int(match_min))+":00.000000Z", msg["tick"]["time"])
                 threeMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 3)*int(match_min))+":00.000000Z", msg["tick"]["time"])
