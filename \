@@ -81,16 +81,18 @@ def demo(displayHeartbeat):
                 match_min = r_extract_digit.search(match_min_obj.group(0)).group(0)
                 match_hour = r_extract_digit.search(match_hour_obj.group(0)).group(0)
                 
-                oneMStartTime = re.sub(":\d{2}\.\d{6}Z", ":00.000000Z", msg["tick"]["time"])
-                twoMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 2)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                threeMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 3)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                fiveMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 5)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                tenMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 10)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                fifteenMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 15)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                thirtyMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 30)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                oneHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 1)*int(match_hour))+"00:00.000000Z", msg["tick"]["time"])
-                fourHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 4)*int(match_hour))+"00:00.000000Z", msg["tick"]["time"])
-                eightHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 8)*int(match_hour))+"00:00.000000Z", msg["tick"]["time"])
+                1MStartTime = re.sub(":\d{2}\.\d{6}Z", ":00.000000Z", msg["tick"]["time"])
+                2MStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 2)*int(match_min))+":00.000000Z", msg["tick"]["time"])
+                3MStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 3)*int(match_min))+":00.000000Z", msg["tick"]["time"])
+                5MStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 5)*int(match_min))+":00.000000Z", msg["tick"]["time"])
+                10MStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 10)*int(match_min))+":00.000000Z", msg["tick"]["time"])
+                15MStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 15)*int(match_min))+":00.000000Z", msg["tick"]["time"])
+                30MStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 30)*int(match_min))+":00.000000Z", msg["tick"]["time"])
+                1HStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 1)*int(match_hour))+"00:00.000000Z", msg["tick"]["time"])
+                4HStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 4)*int(match_hour))+"00:00.000000Z", msg["tick"]["time"])
+                8HStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 8)*int(match_hour))+"00:00.000000Z", msg["tick"]["time"])
+                
+                
 
                 print(line)
 
