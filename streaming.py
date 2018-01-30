@@ -49,6 +49,38 @@ def connect_to_stream():
         s.close()
         print("Caught exception when connecting to stream\n" + str(e)) 
 
+
+
+def UpdateDB(DBname, StartTime, cur, conn, rate, split_num, match_time, msg, MorH):
+    cur.execute("SELECT MAX(timestamp) FROM "+DBname)
+    DBLastTimestamp=cur.fetchone()[0]
+
+    if DBLastTimestamp == None:
+        cur.execute("INSERT INTO "+DBname+" VALUES(1,%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
+    else:
+        if MorH == "M":
+            LastTimeStamp = int(DBLastTimestamp.minute)
+
+        elif MorH == "H":
+            LastTimeStamp = int(DBLastTimestamp.hour)
+
+        if LastTimeStamp != (int(match_time) // split_num)*split_num:
+            cur.execute("INSERT INTO "+DBname+" VALUES((SELECT MAX(id)+1 from "+DBname+"),%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
+            conn.commit()
+
+        else:
+            cur.execute("SELECT open,high,low,close FROM "+DBname+" WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")")
+            ohlc=cur.fetchone()
+
+            if ohlc[1] < rate:
+                cur.execute("UPDATE "+DBname+" SET high = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
+
+            if ohlc[2] > rate:
+                cur.execute("UPDATE "+DBname+" SET low = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
+                
+            cur.execute("UPDATE "+DBname+" SET close = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
+            conn.commit()
+
 def demo(displayHeartbeat):
     response = connect_to_stream()
     if response.status_code != 200:
@@ -72,8 +104,8 @@ def demo(displayHeartbeat):
                 return
 
             if "instrument" in msg or "tick" in msg or displayHeartbeat:
-                cur.execute("INSERT INTO tick VALUES((SELECT MAX(id)+1 FROM tick),%s,%s,%s,%s)",(msg["tick"]["time"], msg["tick"]["instrument"], msg["tick"]["bid"], msg["tick"]["ask"],))
-                conn.commit()
+                #cur.execute("INSERT INTO tick VALUES((SELECT MAX(id)+1 FROM tick),%s,%s,%s,%s)",(msg["tick"]["time"], msg["tick"]["instrument"], msg["tick"]["bid"], msg["tick"]["ask"],))
+                #conn.commit()
                 
                 rate=msg["tick"]["bid"]
 
@@ -83,43 +115,29 @@ def demo(displayHeartbeat):
                 
                 match_min = r_extract_digit.search(match_min_obj.group(0)).group(0)
                 match_hour = r_extract_digit.search(match_hour_obj.group(0)).group(0)
-                
+
+
                 oneMStartTime = re.sub(":\d{2}\.\d{6}Z", ":00.000000Z", msg["tick"]["time"])
 
-                cur.execute("SELECT MAX(timestamp) FROM onem")
-                DBLastTimestamp=cur.fetchone()[0]
+                twoMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 2)*2)+":00.000000Z", msg["tick"]["time"])
+                threeMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 3)*3)+":00.000000Z", msg["tick"]["time"])
+                fiveMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 5)*5)+":00.000000Z", msg["tick"]["time"])
+                tenMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 10)*10)+":00.000000Z", msg["tick"]["time"])
+                fifteenMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 15)*15)+":00.000000Z", msg["tick"]["time"])
+                thirtyMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 30)*30)+":00.000000Z", msg["tick"]["time"])
+                oneHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 1)*1)+":00:00.000000Z", msg["tick"]["time"])
+                fourHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 4)*4)+":00:00.000000Z", msg["tick"]["time"])
+                eightHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 8)*8)+":00:00.000000Z", msg["tick"]["time"])
+                UpdateDB("onem", oneMStartTime, cur, conn, rate, 1, match_min, msg, "M")
+                UpdateDB("twom", twoMStartTime, cur, conn, rate, 2, match_min, msg, "M")
+                UpdateDB("fivem", fiveMStartTime, cur, conn, rate, 5, match_min, msg, "M")
+                UpdateDB("tenm", tenMStartTime, cur, conn, rate, 10, match_min, msg, "M")
+                UpdateDB("fifteenm", fifteenMStartTime, cur, conn, rate, 15, match_min, msg, "M")
+                UpdateDB("thirtym", thirtyMStartTime, cur, conn, rate, 30, match_min, msg, "M")
+                UpdateDB("oneH", oneHStartTime, cur, conn, rate, 1, match_hour, msg, "H")
+                UpdateDB("fourH", fourHStartTime, cur, conn, rate, 4, match_hour, msg, "H")
+                UpdateDB("eightH", eightHStartTime, cur, conn, rate, 8, match_hour, msg, "H")
 
-                if DBLastTimestamp == None:
-                    cur.execute("INSERT INTO onem VALUES(1,%s,%s,%s,%s,%s,%s)", (oneMStartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
-                else:
-                    if int(DBLastTimestamp.minute) != int(match_min):
-                        cur.execute("INSERT INTO onem VALUES((SELECT MAX(id)+1 from onem),%s,%s,%s,%s,%s,%s)", (oneMStartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
-                        conn.commit()
-
-                    else:
-                        cur.execute("SELECT open,high,low,close FROM onem WHERE timestamp IN (SELECT MAX(timestamp) FROM onem)")
-                        ohlc=cur.fetchone()
-
-                        if ohlc[1] < rate:
-                            cur.execute("UPDATE onem SET high = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem)", (rate,))
-
-                        if ohlc[2] > rate:
-                            cur.execute("UPDATE onem SET low = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem)", (rate,))
-                            
-                        cur.execute("UPDATE onem SET close = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM onem)", (rate,))
-
-
-                twoMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 2)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                threeMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 3)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                fiveMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 5)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                tenMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 10)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                fifteenMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 15)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                thirtyMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 30)*int(match_min))+":00.000000Z", msg["tick"]["time"])
-                oneHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 1)*int(match_hour))+"00:00.000000Z", msg["tick"]["time"])
-                fourHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 4)*int(match_hour))+"00:00.000000Z", msg["tick"]["time"])
-                eightHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 8)*int(match_hour))+"00:00.000000Z", msg["tick"]["time"])
-
-                print(line)
 
 def main():
     usage = "usage: %prog [options]"
