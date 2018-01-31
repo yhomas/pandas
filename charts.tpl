@@ -17,8 +17,20 @@ $(function () {
         Highcharts.stockChart('container', {
             chart: {
                 events: {
-                    load: function () {
+                    function requestData() {
+                        $.ajax({
+                            url: './getchartdata',
+                            success: function(point){
+                                var series = chart.series[0];
+                                chart.series[0].addPoint(point, true, true);
+                                setTimeout(requestData, 1000);
+                            },
+                        });
+                    }
 
+                    load: requestData
+
+                       /*
                         // set up the updating of the chart each second
                         var series = this.series[0];
                         setInterval(function () {
@@ -28,7 +40,7 @@ $(function () {
                                 a = Math.round(Math.random() * 102);
                                 b = Math.round(Math.random() * 103);
                                 series.addPoint([x, y, z, a, b], true, true);
-                        }, 1000);
+                        }, 1000); */
                     }
                 }
             },

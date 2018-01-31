@@ -4,6 +4,8 @@ import pandas_highcharts.core as ph
 from pandas.compat import StringIO
 import numpy as np
 import pandas as pd
+import os
+import psycopg2
 
 def read_histdata(histdataPath):
     dataM1 = pd.read_csv(histdataPath, sep=';',
@@ -32,8 +34,17 @@ def index():
     chart = ph.serialize(df, chart_type="stock", title="chart", render_to='my-chart', output_type='json', grid=True)
     return template("charts.tpl", chart=chart)
 
-@route("/getchart")
+@route("/getchartdata")
+def getchartdata():
+    conn = psycopg2.connect("host=postgres port=5432 dbname=fxdb user="+os.environ["postgres_user"])
+    cur =  conn.cursor()
+    
+    DBname="onem"
+    cur.execute("SELECT timestamp,open,high,low,close FROM "+DBname+" WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")")
+    ohlc=cur.fetchone()
+    input_ohlc="["+str(ohlc[0])+","+str(ohlc[1])+","+str(ohlc[2])+","+str(ohlc[3])+","+str(ohlc[4])+"]"
 
+    return template(input_ohlc)
 
 if __name__ == "__main__":
     run(host="0.0.0.0",reloader=True,port=9999)
