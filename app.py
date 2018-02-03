@@ -42,9 +42,10 @@ def getchartdata():
     DBname="onem"
     cur.execute("SELECT timestamp,open,high,low,close FROM "+DBname+" WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")")
     ohlc=cur.fetchone()
-    input_ohlc="["+str(ohlc[0])+","+str(ohlc[1])+","+str(ohlc[2])+","+str(ohlc[3])+","+str(ohlc[4])+"]"
+    input_ohlc='{"time":"'+str(ohlc[0])+'","o":'+str(ohlc[1])+',"h":'+str(ohlc[2])+',"l":'+str(ohlc[3])+',"c":'+str(ohlc[4])+'}'
+    print(input_ohlc)
 
-    return template(input_ohlc)
+    return input_ohlc
 
 if __name__ == "__main__":
-    run(host="0.0.0.0",reloader=True,port=9999)
+    run(host="0.0.0.0",reloader=True,port=80)
