@@ -39,11 +39,9 @@ $(function () {
                                     dataType: "json",
                                     success: function(point){
                                         //var series = this.series[1];
-                                        console.log(point);
-                                        console.log(point.time);
                                         //series.addPoint(point.ohlc, true, true);
-                                        var x = (new Date()).getTime(), // current time
-                                        x = point.time;
+                                        var x = (new Date()).getTime(); // current time
+                                        //x = point.time;
                                         y = point.o;
                                         z = point.h;
                                         a = point.l;

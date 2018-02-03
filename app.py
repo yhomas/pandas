@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import os
 import psycopg2
+from datetime import datetime
 
 def read_histdata(histdataPath):
     dataM1 = pd.read_csv(histdataPath, sep=';',
@@ -41,9 +42,10 @@ def getchartdata():
     
     DBname="onem"
     cur.execute("SELECT timestamp,open,high,low,close FROM "+DBname+" WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")")
-    ohlc=cur.fetchone()
-    input_ohlc='{"time":"'+str(ohlc[0])+'","o":'+str(ohlc[1])+',"h":'+str(ohlc[2])+',"l":'+str(ohlc[3])+',"c":'+str(ohlc[4])+'}'
-    print(input_ohlc)
+    ohlc=list(cur.fetchone())
+    date_obj=datetime.strptime(str(ohlc[0]), '%Y-%m-%d %H:%M:%S')
+    ohlc[0]=str(date_obj.timestamp()).split(".")[0]+"000"
+    input_ohlc='{"time":'+str(ohlc[0])+',"o":'+str(ohlc[1])+',"h":'+str(ohlc[2])+',"l":'+str(ohlc[3])+',"c":'+str(ohlc[4])+'}'
 
     return input_ohlc
 
