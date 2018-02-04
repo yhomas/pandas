@@ -15,6 +15,7 @@ import os
 import psycopg2
 import re
 import datetime
+from progressbar import ProgressBar
 
 from optparse import OptionParser
 
@@ -88,6 +89,18 @@ def read_histdata(histdataPath):
             index_col='Time', parse_dates=True)
     return dataM1
 
+def change_timestamp(input_timestamp):
+    timestamp = str(input_timestamp).replace(" ","T")
+    timestamp += ".000000Z"
+    return timestamp
+
+def add_tick(input_timestamp,input_tick):
+    timestamp = str(input_timestamp).replace(" ","T")
+    timestamp += ".000000Z"
+    bid = input_tick
+    ask = bid + 0.06
+    return {'tick': {'instrument': 'USD_JPY', 'time': timestamp, 'bid': bid, 'ask': ask}}
+
 def TF_ohlc(df, tf):
     x = df.resample(tf).ohlc()
     O = x['Open']['open']
@@ -96,23 +109,38 @@ def TF_ohlc(df, tf):
     C = x['Close']['close']
     ret = pd.DataFrame({'Open':O, 'High':H, 'Low':L, 'Close':C},
             columns=['Open', 'High', 'Low', 'Close'])
+    ret_dropna = ret.dropna()
     tick_list=[]
     ohlc = ("Open","High","Low","Close")
-    print(ret.dropna()["Open"][str(ret.dropna().index[1])])
+    p = ProgressBar(max_value=len(ret_dropna.index))
+    #ret_dropna.index = map(change_timestamp, ret_dropna.index)
+    ret_dropna["Open"]["tick"] = list(map(add_tick, ret_dropna["Open"].index, list(ret_dropna["Open"])))
+    #ret_dropna["High"]["tick"] = list(map(add_tick, ret_dropna["High"].index, list(ret_dropna["High"])))
+    #ret_dropna["Low"]["tick"] = list(map(add_tick, ret_dropna["Low"].index, list(ret_dropna["Low"])))
+    #ret_dropna["Close"]["tick"] = list(map(add_tick, ret_dropna["Close"].index, list(ret_dropna["Close"])))
+    #ret_concat = pd.concat([ret_dropna["Open"],ret_dropna["High"],ret_dropna["Low"],ret_dropna["Close"]])
+    #ret_concat_sort=ret_concat.sort_index(ascending=True)
+    
+    #print(ret_concat_sort)
+
+    k=0
     for i in ret.dropna().index:
+        p.update(k+1)
+        k=k+1
         timestamp = str(i).replace(" ","T")
         timestamp += ".000000Z"
 
         for j in ohlc:
             bid = float(ret.dropna()[j][str(i)])
             ask = bid + 0.06
-            tick = {'tick': {'instrument': 'USD_JPY', 'time': timestamp, 'bid': bid, 'ask': ask}}
-            print(tick)
+            bid_format="{:.3f}".format(bid)
+            ask_format="{:.3f}".format(ask)
+            tick = {'tick': {'instrument': 'USD_JPY', 'time': timestamp, 'bid': bid_format, 'ask': ask_format}}
             tick_list.append(tick)
 
     print(tick_list)
     #{'tick': {'instrument': 'USD_JPY', 'time': '2018-02-02T21:59:59.527809Z', 'bid': 110.136, 'ask': 110.196}}
-    return ret.dropna()
+    return tick_list
 
 def backtestdemo():
     histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
