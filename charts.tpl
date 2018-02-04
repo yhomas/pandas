@@ -40,8 +40,8 @@ $(function () {
                                     success: function(point){
                                         //var series = this.series[1];
                                         //series.addPoint(point.ohlc, true, true);
-                                        var x = (new Date()).getTime(); // current time
-                                        //x = point.time;
+                                        //var x = (new Date()).getTime(); // current time
+                                        x = point.time;
                                         y = point.o;
                                         z = point.h;
                                         a = point.l;
@@ -49,14 +49,7 @@ $(function () {
                                         console.log(x);
                                         series.addPoint([x, y, z, a, b], true, true);
                                     },
-                                });/*
-                                var x = (new Date()).getTime(), // current time
-                                y = Math.round(Math.random() * 100);
-                                z = Math.round(Math.random() * 101);
-                                a = Math.round(Math.random() * 102);
-                                b = Math.round(Math.random() * 103);
-                                console.log(x);
-                                series.addPoint([x, y, z, a, b], true, true);*/
+                                });
                         }, 1000); 
                     } 
                 }

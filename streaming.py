@@ -7,7 +7,8 @@ python streaming.py [options]
 
 To show heartbeat, replace [options] by -b or --displayHeartBeat
 """
-
+import numpy as np
+import pandas as pd
 import requests
 import json
 import os
@@ -81,7 +82,43 @@ def UpdateDB(DBname, StartTime, cur, conn, rate, split_num, match_time, msg, Mor
             cur.execute("UPDATE "+DBname+" SET close = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
             conn.commit()
 
-def demo(displayHeartbeat):
+def read_histdata(histdataPath):
+    dataM1 = pd.read_csv(histdataPath, sep=';',
+            names=('Time', 'Open', 'High', 'Low', 'Close', ''),
+            index_col='Time', parse_dates=True)
+    return dataM1
+
+def TF_ohlc(df, tf):
+    x = df.resample(tf).ohlc()
+    O = x['Open']['open']
+    H = x['High']['high']
+    L = x['Low']['low']
+    C = x['Close']['close']
+    ret = pd.DataFrame({'Open':O, 'High':H, 'Low':L, 'Close':C},
+            columns=['Open', 'High', 'Low', 'Close'])
+    tick_list=[]
+    ohlc = ("Open","High","Low","Close")
+    print(ret.dropna()["Open"][str(ret.dropna().index[1])])
+    for i in ret.dropna().index:
+        timestamp = str(i).replace(" ","T")
+        timestamp += ".000000Z"
+
+        for j in ohlc:
+            bid = float(ret.dropna()[j][str(i)])
+            ask = bid + 0.06
+            tick = {'tick': {'instrument': 'USD_JPY', 'time': timestamp, 'bid': bid, 'ask': ask}}
+            print(tick)
+            tick_list.append(tick)
+
+    print(tick_list)
+    #{'tick': {'instrument': 'USD_JPY', 'time': '2018-02-02T21:59:59.527809Z', 'bid': 110.136, 'ask': 110.196}}
+    return ret.dropna()
+
+def backtestdemo():
+    histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
+    return TF_ohlc(read_histdata(histdataPath), 'T')
+
+def demo():
     response = connect_to_stream()
     if response.status_code != 200:
         print(response.text)
@@ -103,10 +140,10 @@ def demo(displayHeartbeat):
                 print("Caught exception when converting message into json\n" + str(e))
                 return
 
-            if "instrument" in msg or "tick" in msg or displayHeartbeat:
+            if "instrument" in msg or "tick" in msg:
                 #cur.execute("INSERT INTO tick VALUES((SELECT MAX(id)+1 FROM tick),%s,%s,%s,%s)",(msg["tick"]["time"], msg["tick"]["instrument"], msg["tick"]["bid"], msg["tick"]["ask"],))
                 #conn.commit()
-                
+                print(msg)   
                 rate=msg["tick"]["bid"]
 
                 # exam) 2018-01-30T09:44:49.976256Z
@@ -137,21 +174,27 @@ def demo(displayHeartbeat):
                 UpdateDB("oneH", oneHStartTime, cur, conn, rate, 1, match_hour, msg, "H")
                 UpdateDB("fourH", fourHStartTime, cur, conn, rate, 4, match_hour, msg, "H")
                 UpdateDB("eightH", eightHStartTime, cur, conn, rate, 8, match_hour, msg, "H")
-
+                
+                #20150101 231200;120.381000;120.382000;120.380000;120.381000;0
 
 def main():
     usage = "usage: %prog [options]"
     parser = OptionParser(usage)
-    parser.add_option("-b", "--displayHeartBeat", dest = "verbose", action = "store_true", 
+    parser.add_option("-b", "--backtest", dest = "verbose", action = "store_true", 
                         help = "Display HeartBeat in streaming data")
-    displayHeartbeat = False
+    backtest = False
 
     (options, args) = parser.parse_args()
     if len(args) > 1:
         parser.error("incorrect number of arguments")
     if options.verbose:
-        displayHeartbeat = True
-    demo(displayHeartbeat)
+        backtest = True
+    
+    if backtest:
+        backtestdemo()
+    
+    else:
+        demo()
 
 
 if __name__ == "__main__":
