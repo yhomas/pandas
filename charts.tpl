@@ -33,6 +33,7 @@ $(function () {
                         load: function () {
 
                         var series = this.series[0];
+                        var past_x = 0;
                         setInterval(function () {
                                 $.ajax({
                                     url: '/getchartdata',
@@ -46,8 +47,14 @@ $(function () {
                                         z = point.h;
                                         a = point.l;
                                         b = point.c;
-                                        console.log(x);
-                                        series.addPoint([x, y, z, a, b], true, true);
+                                        console.log(series.data);
+                                        if(past_x == x){
+                                            series.removePoint(series.data.length-1, true, true);
+                                            series.addPoint([x, y, z, a, b]);
+                                        }else{
+                                            past_x = x;
+                                            series.addPoint([x, y, z, a, b]);
+                                        }
                                     },
                                 });
                         }, 1000); 

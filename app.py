@@ -50,4 +50,4 @@ def getchartdata():
     return input_ohlc
 
 if __name__ == "__main__":
-    run(host="0.0.0.0",reloader=True,port=80)
+    run(host="0.0.0.0",reloader=True,port=9999)
