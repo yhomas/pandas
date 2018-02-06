@@ -49,5 +49,26 @@ def getchartdata():
 
     return input_ohlc
 
+def init_input_ohlc(ohlc):
+    date_obj=datetime.strptime(str(ohlc[0]), '%Y-%m-%d %H:%M:%S')
+    new_timestamp=str(date_obj.timestamp()).split(".")[0]+"000"
+    #new_input_ohlc='{"time":'+str(new_timestamp)+',"o":'+str(ohlc[1])+',"h":'+str(ohlc[2])+',"l":'+str(ohlc[3])+',"c":'+str(ohlc[4])+'}'
+    new_input_ohlc=[int(new_timestamp), float(ohlc[1]), float(ohlc[2]), float(ohlc[3]), float(ohlc[4])]
+
+    return new_input_ohlc
+
+@route("/getchartpastdata")
+def getchartpastdata():
+    conn = psycopg2.connect("host=postgres port=5432 dbname=fxdb user="+os.environ["postgres_user"])
+    cur =  conn.cursor()
+
+    DBname="onem"
+    cur.execute("SELECT timestamp,open,high,low,close FROM "+DBname+" ORDER BY timestamp LIMIT 10")
+    ohlcs=cur.fetchall()
+    ohlcs_list=str(list(map(init_input_ohlc,ohlcs)))
+
+    return ohlcs_list
+
+
 if __name__ == "__main__":
     run(host="0.0.0.0",reloader=True,port=9999)

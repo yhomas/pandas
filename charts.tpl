@@ -49,11 +49,11 @@ $(function () {
                                         b = point.c;
                                         console.log(series.data);
                                         if(past_x == x){
-                                            series.removePoint(series.data.length-1, true, true);
-                                            series.addPoint([x, y, z, a, b]);
+                                            series.removePoint(series.data.length-1, true, false);
+                                            series.addPoint([x, y, z, a, b], true, false);
                                         }else{
                                             past_x = x;
-                                            series.addPoint([x, y, z, a, b]);
+                                            series.addPoint([x, y, z, a, b], true, false);
                                         }
                                     },
                                 });
