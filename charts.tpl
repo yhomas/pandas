@@ -86,27 +86,47 @@ $(function () {
                 exporting: {
                     enabled: false
                 },
+            series: [{
+            name: 'Random data',
+                  type: 'candlestick',
+                  data: (function () {
+                          function aj(){
+                          var result = $.ajax({
+                                url: "/getchartpastdata",
+                                dataType: "json",
+                                async: false
+                                }).responseText;
+                                return result;
+                            }
+                          ohlc_text=aj();
+                          ohlc_json=JSON.parse(ohlc_text);
+                          console.log(ohlc_text);
+                          return ohlc_json.ohlclist;
+                          //return ohlc_list;
+                          /*
+                          function(point){
 
-                series: [{
-                    name: 'Random data',
-                    type: 'candlestick',
-                    data: (function () {
-                      // generate an array of random data
+                          console.log(point[0]);
+                          console.log(point[1]);
+                          // generate an array of random data
                           var data = [],
                           time = (new Date()).getTime(),
                           i;
-
-                          for (i = -1; i <= 0; i += 1) {
-                              data.push([
+                          for (i = 0; i <= 20; i += 1) {
+                          /*data.push([
                                   time + i * 1000,
                                   Math.round(Math.random() * 100),
                                   Math.round(Math.random() * 101),
                                   Math.round(Math.random() * 102),
                                   Math.round(Math.random() * 103)
-                              ]);
+                          ]);
+                          data.push(point[i]);
+                          console.log(data);
                           }
-                          return data;
-                  }())
+                          console.log("------------");
+                          console.log(data);*/
+
+                          }())
                 }]
         });
 });

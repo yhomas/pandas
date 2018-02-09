@@ -63,9 +63,10 @@ def getchartpastdata():
     cur =  conn.cursor()
 
     DBname="onem"
-    cur.execute("SELECT timestamp,open,high,low,close FROM "+DBname+" ORDER BY timestamp LIMIT 10")
+    cur.execute("SELECT timestamp,open,high,low,close FROM "+DBname+" ORDER BY timestamp DESC LIMIT 50")
     ohlcs=cur.fetchall()
-    ohlcs_list=str(list(map(init_input_ohlc,ohlcs)))
+    ohlcs_list='{"ohlclist":'+str(list(map(init_input_ohlc,ohlcs))[::-1])+'}'
+    #ohlcs_list=str(list(map(init_input_ohlc,ohlcs)))
 
     return ohlcs_list
 
