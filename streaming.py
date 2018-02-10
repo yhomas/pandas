@@ -16,7 +16,6 @@ import psycopg2
 import re
 import datetime
 from progressbar import ProgressBar
-
 from optparse import OptionParser
 
 def connect_to_stream():
@@ -110,18 +109,11 @@ def TF_ohlc(df, tf):
     ret = pd.DataFrame({'Open':O, 'High':H, 'Low':L, 'Close':C},
             columns=['Open', 'High', 'Low', 'Close'])
     ret_dropna = ret.dropna()
-    tick_list=[]
-    ohlc = ("Open","High","Low","Close")
-    ret_dropna["Open"]["tick"] = list(map(add_tick, ret_dropna["Open"].index, list(ret_dropna["Open"])))
-    ret_dropna["High"]["tick"] = list(map(add_tick, ret_dropna["High"].index, list(ret_dropna["High"])))
-    ret_dropna["Low"]["tick"] = list(map(add_tick, ret_dropna["Low"].index, list(ret_dropna["Low"])))
-    ret_dropna["Close"]["tick"] = list(map(add_tick, ret_dropna["Close"].index, list(ret_dropna["Close"])))
-    tick_df=pd.DataFrame({"tick":ret_dropna["Open"]["tick"]+ret_dropna["High"]["tick"]+ret_dropna["Low"]["tick"]+ret_dropna["Close"]["tick"]})
-    ret_concat_sort=tick_df.sort_index(ascending=True)
-    print(ret_concat_sort["tick"])
+    ret_concat = pd.concat([ret_dropna["Open"],ret_dropna["High"],ret_dropna["Low"],ret_dropna["Close"]])
+    ret_concat_sort=ret_concat.sort_index(ascending=True)
 
-    return list(ret_concat_sort["tick"])
-
+    ret_concat_sort_dict = list(map(add_tick, ret_concat_sort.index, list(ret_concat_sort)))
+    return ret_concat_sort_dict
 
 def updateAllDB(response, dbname):
     conn = psycopg2.connect("host=postgres port=5432 dbname="+dbname+" user="+os.environ["postgres_user"])
@@ -143,16 +135,21 @@ def updateAllDB(response, dbname):
         cur.execute("TRUNCATE oneh")
         cur.execute("TRUNCATE fourh")
         cur.execute("TRUNCATE eighth")
+        p = ProgressBar(max_value=len(response))
+        k=0
         lines = response
 
     for line in lines:
         if line:
             try:
                 if dbname == "fxdb":
+                    print(msg)   
                     line = line.decode('utf-8')
                     msg = json.loads(line)
 
                 elif dbname == "fxdb_bt":
+                    p.update(k+1)
+                    k=k+1
                     msg = line
 
             except Exception as e:
@@ -160,12 +157,8 @@ def updateAllDB(response, dbname):
                 return
 
             if "instrument" in msg or "tick" in msg:
-                #cur.execute("INSERT INTO tick VALUES((SELECT MAX(id)+1 FROM tick),%s,%s,%s,%s)",(msg["tick"]["time"], msg["tick"]["instrument"], msg["tick"]["bid"], msg["tick"]["ask"],))
-                #conn.commit()
-                print(msg)   
                 rate=msg["tick"]["bid"]
 
-                # exam) 2018-01-30T09:44:49.976256Z
                 match_min_obj = r_extract_min.search(msg["tick"]["time"])
                 match_hour_obj = r_extract_hour.search(msg["tick"]["time"])
                 
@@ -191,8 +184,6 @@ def updateAllDB(response, dbname):
                 UpdateDB("oneh", oneHStartTime, cur, conn, rate, 1, match_hour, msg, "H")
                 UpdateDB("fourh", fourHStartTime, cur, conn, rate, 4, match_hour, msg, "H")
                 UpdateDB("eighth", eightHStartTime, cur, conn, rate, 8, match_hour, msg, "H")
-                
-                #20150101 231200;120.381000;120.382000;120.380000;120.381000;0
 
 def backtestdemo():
     histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
