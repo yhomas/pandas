@@ -112,38 +112,48 @@ def TF_ohlc(df, tf):
     ret_dropna = ret.dropna()
     tick_list=[]
     ohlc = ("Open","High","Low","Close")
-    p = ProgressBar(max_value=len(ret_dropna.index))
     ret_dropna["Open"]["tick"] = list(map(add_tick, ret_dropna["Open"].index, list(ret_dropna["Open"])))
     ret_dropna["High"]["tick"] = list(map(add_tick, ret_dropna["High"].index, list(ret_dropna["High"])))
     ret_dropna["Low"]["tick"] = list(map(add_tick, ret_dropna["Low"].index, list(ret_dropna["Low"])))
     ret_dropna["Close"]["tick"] = list(map(add_tick, ret_dropna["Close"].index, list(ret_dropna["Close"])))
     tick_df=pd.DataFrame({"tick":ret_dropna["Open"]["tick"]+ret_dropna["High"]["tick"]+ret_dropna["Low"]["tick"]+ret_dropna["Close"]["tick"]})
     ret_concat_sort=tick_df.sort_index(ascending=True)
-    #print(list(ret_concat_sort["tick"]))
+    print(ret_concat_sort["tick"])
 
-    return list(ret_concat_sort)
+    return list(ret_concat_sort["tick"])
 
-def backtestdemo():
-    histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
-    return TF_ohlc(read_histdata(histdataPath), 'T')
 
-def demo():
-    response = connect_to_stream()
-    if response.status_code != 200:
-        print(response.text)
-        return
-
-    conn = psycopg2.connect("host=postgres port=5432 dbname=fxdb user="+os.environ["postgres_user"])
+def updateAllDB(response, dbname):
+    conn = psycopg2.connect("host=postgres port=5432 dbname="+dbname+" user="+os.environ["postgres_user"])
     cur =  conn.cursor()
     r_extract_min = re.compile(":\d{2}:")
     r_extract_hour = re.compile("T\d{2}:")
     r_extract_digit = re.compile("\d{2}")
 
-    for line in response.iter_lines(1):
+    if dbname == "fxdb":
+        lines = response.iter_lines(1)
+    
+    elif dbname == "fxdb_bt":
+        cur.execute("TRUNCATE onem")
+        cur.execute("TRUNCATE twom")
+        cur.execute("TRUNCATE fivem")
+        cur.execute("TRUNCATE tenm")
+        cur.execute("TRUNCATE fifteenm")
+        cur.execute("TRUNCATE thirtym")
+        cur.execute("TRUNCATE oneh")
+        cur.execute("TRUNCATE fourh")
+        cur.execute("TRUNCATE eighth")
+        lines = response
+
+    for line in lines:
         if line:
             try:
-                line = line.decode('utf-8')
-                msg = json.loads(line)
+                if dbname == "fxdb":
+                    line = line.decode('utf-8')
+                    msg = json.loads(line)
+
+                elif dbname == "fxdb_bt":
+                    msg = line
 
             except Exception as e:
                 print("Caught exception when converting message into json\n" + str(e))
@@ -162,9 +172,7 @@ def demo():
                 match_min = r_extract_digit.search(match_min_obj.group(0)).group(0)
                 match_hour = r_extract_digit.search(match_hour_obj.group(0)).group(0)
 
-
                 oneMStartTime = re.sub(":\d{2}\.\d{6}Z", ":00.000000Z", msg["tick"]["time"])
-
                 twoMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 2)*2)+":00.000000Z", msg["tick"]["time"])
                 threeMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 3)*3)+":00.000000Z", msg["tick"]["time"])
                 fiveMStartTime = re.sub("\d{2}:\d{2}\.\d{6}Z", str((int(match_min) // 5)*5)+":00.000000Z", msg["tick"]["time"])
@@ -180,11 +188,23 @@ def demo():
                 UpdateDB("tenm", tenMStartTime, cur, conn, rate, 10, match_min, msg, "M")
                 UpdateDB("fifteenm", fifteenMStartTime, cur, conn, rate, 15, match_min, msg, "M")
                 UpdateDB("thirtym", thirtyMStartTime, cur, conn, rate, 30, match_min, msg, "M")
-                UpdateDB("oneH", oneHStartTime, cur, conn, rate, 1, match_hour, msg, "H")
-                UpdateDB("fourH", fourHStartTime, cur, conn, rate, 4, match_hour, msg, "H")
-                UpdateDB("eightH", eightHStartTime, cur, conn, rate, 8, match_hour, msg, "H")
+                UpdateDB("oneh", oneHStartTime, cur, conn, rate, 1, match_hour, msg, "H")
+                UpdateDB("fourh", fourHStartTime, cur, conn, rate, 4, match_hour, msg, "H")
+                UpdateDB("eighth", eightHStartTime, cur, conn, rate, 8, match_hour, msg, "H")
                 
                 #20150101 231200;120.381000;120.382000;120.380000;120.381000;0
+
+def backtestdemo():
+    histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
+    updateAllDB(TF_ohlc(read_histdata(histdataPath), 'T'), "fxdb_bt")
+
+def demo():
+    response = connect_to_stream()
+    if response.status_code != 200:
+        print(response.text)
+        return
+    
+    updateAllDB(response, "fxdb")
 
 def main():
     usage = "usage: %prog [options]"
