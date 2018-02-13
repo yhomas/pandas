@@ -143,9 +143,9 @@ def updateAllDB(response, dbname):
         if line:
             try:
                 if dbname == "fxdb":
-                    print(msg)   
                     line = line.decode('utf-8')
                     msg = json.loads(line)
+                    print(msg)   
 
                 elif dbname == "fxdb_bt":
                     p.update(k+1)
@@ -184,6 +184,8 @@ def updateAllDB(response, dbname):
                 UpdateDB("oneh", oneHStartTime, cur, conn, rate, 1, match_hour, msg, "H")
                 UpdateDB("fourh", fourHStartTime, cur, conn, rate, 4, match_hour, msg, "H")
                 UpdateDB("eighth", eightHStartTime, cur, conn, rate, 8, match_hour, msg, "H")
+
+                calc.wma(cur, conn)
 
 def backtestdemo():
     histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
