@@ -17,6 +17,7 @@ import re
 import datetime
 from progressbar import ProgressBar
 from optparse import OptionParser
+import calc
 
 def connect_to_stream():
 
@@ -118,6 +119,8 @@ def TF_ohlc(df, tf):
 def updateAllDB(response, dbname):
     conn = psycopg2.connect("host=postgres port=5432 dbname="+dbname+" user="+os.environ["postgres_user"])
     cur =  conn.cursor()
+    conn_calc = psycopg2.connect("host=postgres port=5432 dbname=calcdb user="+os.environ["postgres_user"])
+    cur_calc =  conn_calc.cursor()
     r_extract_min = re.compile(":\d{2}:")
     r_extract_hour = re.compile("T\d{2}:")
     r_extract_digit = re.compile("\d{2}")
@@ -184,8 +187,8 @@ def updateAllDB(response, dbname):
                 UpdateDB("oneh", oneHStartTime, cur, conn, rate, 1, match_hour, msg, "H")
                 UpdateDB("fourh", fourHStartTime, cur, conn, rate, 4, match_hour, msg, "H")
                 UpdateDB("eighth", eightHStartTime, cur, conn, rate, 8, match_hour, msg, "H")
-
-                calc.wma(cur, conn)
+                
+                calc.wma_write(cur, conn, cur_calc, conn_calc, "onem")
 
 def backtestdemo():
     histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
