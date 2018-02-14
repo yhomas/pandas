@@ -53,12 +53,12 @@ def connect_to_stream():
 
 
 
-def UpdateDB(DBname, StartTime, argstr, rate, split_num, match_time, msg, MorH):
-    argstr.cur.execute("SELECT MAX(timestamp) FROM "+DBname)
+def UpdateDB(TABLEname, StartTime, argstr, rate, split_num, match_time, msg, MorH):
+    argstr.cur.execute("SELECT MAX(timestamp) FROM "+TABLEname)
     DBLastTimestamp=argstr.cur.fetchone()[0]
 
     if DBLastTimestamp == None:
-        argstr.cur.execute("INSERT INTO "+DBname+" VALUES(1,%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
+        argstr.cur.execute("INSERT INTO "+TABLEname+" VALUES(1,%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
     else:
         if MorH == "M":
             LastTimeStamp = int(DBLastTimestamp.minute)
@@ -67,21 +67,21 @@ def UpdateDB(DBname, StartTime, argstr, rate, split_num, match_time, msg, MorH):
             LastTimeStamp = int(DBLastTimestamp.hour)
 
         if LastTimeStamp != (int(match_time) // split_num)*split_num:
-            calc.wma_write(argstr, "onem")
-            argstr.cur.execute("INSERT INTO "+DBname+" VALUES((SELECT MAX(id)+1 from "+DBname+"),%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
+            calc.wma_write(argstr, TABLEname)
+            argstr.cur.execute("INSERT INTO "+TABLEname+" VALUES((SELECT MAX(id)+1 from "+TABLEname+"),%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
             argstr.conn.commit()
 
         else:
-            argstr.cur.execute("SELECT open,high,low,close FROM "+DBname+" WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")")
+            argstr.cur.execute("SELECT open,high,low,close FROM "+TABLEname+" WHERE timestamp IN (SELECT MAX(timestamp) FROM "+TABLEname+")")
             ohlc=argstr.cur.fetchone()
 
             if ohlc[1] < rate:
-                argstr.cur.execute("UPDATE "+DBname+" SET high = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
+                argstr.cur.execute("UPDATE "+TABLEname+" SET high = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+TABLEname+")", (rate,))
 
             if ohlc[2] > rate:
-                argstr.cur.execute("UPDATE "+DBname+" SET low = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
+                argstr.cur.execute("UPDATE "+TABLEname+" SET low = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+TABLEname+")", (rate,))
                 
-            argstr.cur.execute("UPDATE "+DBname+" SET close = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
+            argstr.cur.execute("UPDATE "+TABLEname+" SET close = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+TABLEname+")", (rate,))
             argstr.conn.commit()
 
 def read_histdata(histdataPath):
