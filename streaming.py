@@ -53,12 +53,12 @@ def connect_to_stream():
 
 
 
-def UpdateDB(DBname, StartTime, cur, conn, rate, split_num, match_time, msg, MorH):
-    cur.execute("SELECT MAX(timestamp) FROM "+DBname)
-    DBLastTimestamp=cur.fetchone()[0]
+def UpdateDB(DBname, StartTime, argstr, rate, split_num, match_time, msg, MorH):
+    argstr.cur.execute("SELECT MAX(timestamp) FROM "+DBname)
+    DBLastTimestamp=argstr.cur.fetchone()[0]
 
     if DBLastTimestamp == None:
-        cur.execute("INSERT INTO "+DBname+" VALUES(1,%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
+        argstr.cur.execute("INSERT INTO "+DBname+" VALUES(1,%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
     else:
         if MorH == "M":
             LastTimeStamp = int(DBLastTimestamp.minute)
@@ -67,21 +67,22 @@ def UpdateDB(DBname, StartTime, cur, conn, rate, split_num, match_time, msg, Mor
             LastTimeStamp = int(DBLastTimestamp.hour)
 
         if LastTimeStamp != (int(match_time) // split_num)*split_num:
-            cur.execute("INSERT INTO "+DBname+" VALUES((SELECT MAX(id)+1 from "+DBname+"),%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
-            conn.commit()
+            calc.wma_write(argstr, "onem")
+            argstr.cur.execute("INSERT INTO "+DBname+" VALUES((SELECT MAX(id)+1 from "+DBname+"),%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
+            argstr.conn.commit()
 
         else:
-            cur.execute("SELECT open,high,low,close FROM "+DBname+" WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")")
-            ohlc=cur.fetchone()
+            argstr.cur.execute("SELECT open,high,low,close FROM "+DBname+" WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")")
+            ohlc=argstr.cur.fetchone()
 
             if ohlc[1] < rate:
-                cur.execute("UPDATE "+DBname+" SET high = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
+                argstr.cur.execute("UPDATE "+DBname+" SET high = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
 
             if ohlc[2] > rate:
-                cur.execute("UPDATE "+DBname+" SET low = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
+                argstr.cur.execute("UPDATE "+DBname+" SET low = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
                 
-            cur.execute("UPDATE "+DBname+" SET close = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
-            conn.commit()
+            argstr.cur.execute("UPDATE "+DBname+" SET close = %s WHERE timestamp IN (SELECT MAX(timestamp) FROM "+DBname+")", (rate,))
+            argstr.conn.commit()
 
 def read_histdata(histdataPath):
     dataM1 = pd.read_csv(histdataPath, sep=';',
@@ -117,10 +118,12 @@ def TF_ohlc(df, tf):
     return ret_concat_sort_dict
 
 def updateAllDB(response, dbname):
-    conn = psycopg2.connect("host=postgres port=5432 dbname="+dbname+" user="+os.environ["postgres_user"])
-    cur =  conn.cursor()
-    conn_calc = psycopg2.connect("host=postgres port=5432 dbname=calcdb user="+os.environ["postgres_user"])
-    cur_calc =  conn_calc.cursor()
+    class argstr:
+        conn = psycopg2.connect("host=postgres port=5432 dbname="+dbname+" user="+os.environ["postgres_user"])
+        cur =  conn.cursor()
+        conn_calc = psycopg2.connect("host=postgres port=5432 dbname=calcdb user="+os.environ["postgres_user"])
+        cur_calc =  conn_calc.cursor()
+
     r_extract_min = re.compile(":\d{2}:")
     r_extract_hour = re.compile("T\d{2}:")
     r_extract_digit = re.compile("\d{2}")
@@ -178,6 +181,7 @@ def updateAllDB(response, dbname):
                 oneHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 1)*1)+":00:00.000000Z", msg["tick"]["time"])
                 fourHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 4)*4)+":00:00.000000Z", msg["tick"]["time"])
                 eightHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 8)*8)+":00:00.000000Z", msg["tick"]["time"])
+                '''
                 UpdateDB("onem", oneMStartTime, cur, conn, rate, 1, match_min, msg, "M")
                 UpdateDB("twom", twoMStartTime, cur, conn, rate, 2, match_min, msg, "M")
                 UpdateDB("fivem", fiveMStartTime, cur, conn, rate, 5, match_min, msg, "M")
@@ -187,8 +191,17 @@ def updateAllDB(response, dbname):
                 UpdateDB("oneh", oneHStartTime, cur, conn, rate, 1, match_hour, msg, "H")
                 UpdateDB("fourh", fourHStartTime, cur, conn, rate, 4, match_hour, msg, "H")
                 UpdateDB("eighth", eightHStartTime, cur, conn, rate, 8, match_hour, msg, "H")
-                
-                calc.wma_write(cur, conn, cur_calc, conn_calc, "onem")
+                '''
+
+                UpdateDB("onem", oneMStartTime, argstr, rate, 1, match_min, msg, "M")
+                UpdateDB("twom", twoMStartTime, argstr, rate, 2, match_min, msg, "M")
+                UpdateDB("fivem", fiveMStartTime, argstr, rate, 5, match_min, msg, "M")
+                UpdateDB("tenm", tenMStartTime, argstr, rate, 10, match_min, msg, "M")
+                UpdateDB("fifteenm", fifteenMStartTime, argstr, rate, 15, match_min, msg, "M")
+                UpdateDB("thirtym", thirtyMStartTime, argstr, rate, 30, match_min, msg, "M")
+                UpdateDB("oneh", oneHStartTime, argstr, rate, 1, match_hour, msg, "H")
+                UpdateDB("fourh", fourHStartTime, argstr, rate, 4, match_hour, msg, "H")
+                UpdateDB("eighth", eightHStartTime, argstr, rate, 8, match_hour, msg, "H")
 
 def backtestdemo():
     histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
