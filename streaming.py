@@ -117,12 +117,13 @@ def TF_ohlc(df, tf):
     ret_concat_sort_dict = list(map(add_tick, ret_concat_sort.index, list(ret_concat_sort)))
     return ret_concat_sort_dict
 
-def updateAllDB(response, dbname):
+def updateAllDB(response, dbname, calcdb_name):
     class argstr:
         conn = psycopg2.connect("host=postgres port=5432 dbname="+dbname+" user="+os.environ["postgres_user"])
         cur =  conn.cursor()
-        conn_calc = psycopg2.connect("host=postgres port=5432 dbname=calcdb user="+os.environ["postgres_user"])
+        conn_calc = psycopg2.connect("host=postgres port=5432 dbname="+calcdb_name+" user="+os.environ["postgres_user"])
         cur_calc =  conn_calc.cursor()
+        tablelist=["onem", "twom", "fivem", "tenm", "fifteenm", "thirtym", "oneh", "fourh", "eighth"]
 
     r_extract_min = re.compile(":\d{2}:")
     r_extract_hour = re.compile("T\d{2}:")
@@ -132,15 +133,10 @@ def updateAllDB(response, dbname):
         lines = response.iter_lines(1)
     
     elif dbname == "fxdb_bt":
-        cur.execute("TRUNCATE onem")
-        cur.execute("TRUNCATE twom")
-        cur.execute("TRUNCATE fivem")
-        cur.execute("TRUNCATE tenm")
-        cur.execute("TRUNCATE fifteenm")
-        cur.execute("TRUNCATE thirtym")
-        cur.execute("TRUNCATE oneh")
-        cur.execute("TRUNCATE fourh")
-        cur.execute("TRUNCATE eighth")
+        for tablename in argstr.tablelist:
+            argstr.cur.execute("TRUNCATE "+tablename)
+            argstr.cur_calc.execute("TRUNCATE "+tablename+"_wma")
+        
         p = ProgressBar(max_value=len(response))
         k=0
         lines = response
@@ -205,7 +201,7 @@ def updateAllDB(response, dbname):
 
 def backtestdemo():
     histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
-    updateAllDB(TF_ohlc(read_histdata(histdataPath), 'T'), "fxdb_bt")
+    updateAllDB(TF_ohlc(read_histdata(histdataPath), 'T'), "fxdb_bt", "calcdb_bt")
 
 def demo():
     response = connect_to_stream()
@@ -213,7 +209,7 @@ def demo():
         print(response.text)
         return
     
-    updateAllDB(response, "fxdb")
+    updateAllDB(response, "fxdb", "calcdb")
 
 def main():
     usage = "usage: %prog [options]"
