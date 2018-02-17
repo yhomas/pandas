@@ -1,12 +1,3 @@
-"""
-Demonstrates streaming feature in OANDA open api
-
-To execute, run the following command:
-
-python streaming.py [options]
-
-To show heartbeat, replace [options] by -b or --displayHeartBeat
-"""
 import numpy as np
 import pandas as pd
 import requests
@@ -50,7 +41,6 @@ def connect_to_stream():
     except Exception as e:
         s.close()
         print("Caught exception when connecting to stream\n" + str(e)) 
-
 
 
 def UpdateDB(TABLEname, StartTime, argstr, rate, split_num, match_time, msg, MorH):
@@ -133,13 +123,13 @@ def updateAllDB(response, dbname, calcdb_name):
         lines = response.iter_lines(1)
     
     elif dbname == "fxdb_bt":
+        p = ProgressBar(max_value=len(response))
+        kcount = 0
+        lines = response
         for tablename in argstr.tablelist:
             argstr.cur.execute("TRUNCATE "+tablename)
             argstr.cur_calc.execute("TRUNCATE "+tablename+"_wma")
         
-        p = ProgressBar(max_value=len(response))
-        k=0
-        lines = response
 
     for line in lines:
         if line:
@@ -150,8 +140,8 @@ def updateAllDB(response, dbname, calcdb_name):
                     print(msg)   
 
                 elif dbname == "fxdb_bt":
-                    p.update(k+1)
-                    k=k+1
+                    p.update(kcount+1)
+                    kcount=kcount+1
                     msg = line
 
             except Exception as e:
@@ -177,17 +167,6 @@ def updateAllDB(response, dbname, calcdb_name):
                 oneHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 1)*1)+":00:00.000000Z", msg["tick"]["time"])
                 fourHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 4)*4)+":00:00.000000Z", msg["tick"]["time"])
                 eightHStartTime = re.sub("\d{2}:\d{2}:\d{2}\.\d{6}Z", str((int(match_hour) // 8)*8)+":00:00.000000Z", msg["tick"]["time"])
-                '''
-                UpdateDB("onem", oneMStartTime, cur, conn, rate, 1, match_min, msg, "M")
-                UpdateDB("twom", twoMStartTime, cur, conn, rate, 2, match_min, msg, "M")
-                UpdateDB("fivem", fiveMStartTime, cur, conn, rate, 5, match_min, msg, "M")
-                UpdateDB("tenm", tenMStartTime, cur, conn, rate, 10, match_min, msg, "M")
-                UpdateDB("fifteenm", fifteenMStartTime, cur, conn, rate, 15, match_min, msg, "M")
-                UpdateDB("thirtym", thirtyMStartTime, cur, conn, rate, 30, match_min, msg, "M")
-                UpdateDB("oneh", oneHStartTime, cur, conn, rate, 1, match_hour, msg, "H")
-                UpdateDB("fourh", fourHStartTime, cur, conn, rate, 4, match_hour, msg, "H")
-                UpdateDB("eighth", eightHStartTime, cur, conn, rate, 8, match_hour, msg, "H")
-                '''
 
                 UpdateDB("onem", oneMStartTime, argstr, rate, 1, match_min, msg, "M")
                 UpdateDB("twom", twoMStartTime, argstr, rate, 2, match_min, msg, "M")
@@ -198,6 +177,7 @@ def updateAllDB(response, dbname, calcdb_name):
                 UpdateDB("oneh", oneHStartTime, argstr, rate, 1, match_hour, msg, "H")
                 UpdateDB("fourh", fourHStartTime, argstr, rate, 4, match_hour, msg, "H")
                 UpdateDB("eighth", eightHStartTime, argstr, rate, 8, match_hour, msg, "H")
+
 
 def backtestdemo():
     histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
