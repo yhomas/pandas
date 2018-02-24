@@ -33,7 +33,7 @@ def mainaction():
 def index():
     df=mainaction()
     chart = ph.serialize(df, chart_type="stock", title="chart", render_to='my-chart', output_type='json', grid=True)
-    return template("charts.tpl", chart=chart)
+    return template("tmpl/charts.tpl", chart=chart)
 
 @route("/getchartdata")
 def getchartdata():
@@ -59,11 +59,11 @@ def init_input_ohlc(ohlc):
 
 @route("/getchartpastdata")
 def getchartpastdata():
-    conn = psycopg2.connect("host=postgres port=5432 dbname=fxdb user="+os.environ["postgres_user"])
+    conn = psycopg2.connect("host=postgres port=5432 dbname=fxdb_bt user="+os.environ["postgres_user"])
     cur =  conn.cursor()
 
     DBname="onem"
-    cur.execute("SELECT timestamp,open,high,low,close FROM "+DBname+" ORDER BY timestamp DESC LIMIT 60")
+    cur.execute("SELECT timestamp,open,high,low,close FROM "+DBname+" ORDER BY timestamp DESC LIMIT 2000")
     ohlcs=cur.fetchall()
     ohlcs_list='{"ohlclist":'+str(list(map(init_input_ohlc,ohlcs))[::-1])+'}'
     #ohlcs_list=str(list(map(init_input_ohlc,ohlcs)))
