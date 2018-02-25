@@ -1,4 +1,4 @@
-from bottle import route, run, template, request, redirect
+from bottle import route, template, run, request, redirect, static_file, auth_basic
 import sqlite3
 import pandas_highcharts.core as ph
 from pandas.compat import StringIO
@@ -28,6 +28,33 @@ def TF_ohlc(df, tf):
 def mainaction():
     histdataPath="histdata/DAT_ASCII_USDJPY_M1_2015.csv"
     return TF_ohlc(read_histdata(histdataPath), 'H')
+
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+@route('/tmpl/<filename>')
+def css_dir(filename):
+    return static_file(filename, root=BASE_DIR+"/tmpl")
+
+@route('/tmpl/css/<filename>')
+def css_dir(filename):
+    return static_file(filename, root=BASE_DIR+"/tmpl/css")
+
+@route('/tmpl/js/<filename>')
+def css_dir(filename):
+    return static_file(filename, root=BASE_DIR+"/tmpl/js")
+
+@route('/tmpl/tmpl/<filename>')
+def css_dir(filename):
+    return static_file(filename, root=BASE_DIR+"/tmpl/fonts")
+
+@route('/tmpl/fonts/codropsicons/<filename>')
+def css_dir(filename):
+    return static_file(filename, root=BASE_DIR+"/tmpl/fonts/codropsicons/")
+
+@route('/tmpl/fonts/ecoicons/<filename>')
+def css_dir(filename):
+    return static_file(filename, root=BASE_DIR+"/tmpl/fonts/ecoicons/")
 
 @route("/")
 def index():

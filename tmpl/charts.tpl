@@ -1,9 +1,9 @@
-% rebase('base.tpl')
-<div id="container"></div>
+% rebase('tmpl/base.tpl')
+<div id="chartview"></div>
 <script>
 function requestData() {
     $.ajax({
-        url: '127.0.0.1:9999/getchartdata',
+        url: '../getchartdata',
         success: function(point){
             console.log(point);
             var series = chart.series[0];
@@ -20,7 +20,7 @@ $(function () {
         });
         // Create the chart
 
-        Highcharts.stockChart('container', {
+        Highcharts.stockChart('chartview', {
             chart: {
                 events: {
                     //load: requestData
@@ -31,7 +31,7 @@ $(function () {
                         var past_x = 0;
                         setInterval(function () {
                                 $.ajax({
-                                    url: '/getchartdata',
+                                    url: '../getchartdata',
                                     dataType: "json",
                                     success: function(point){
                                         x = point.time;
@@ -84,7 +84,7 @@ $(function () {
                   data: (function () {
                           function aj(){
                           var result = $.ajax({
-                                url: "/getchartpastdata",
+                                url: "../getchartpastdata",
                                 dataType: "json",
                                 async: false
                                 }).responseText;
