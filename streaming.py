@@ -58,6 +58,7 @@ def UpdateDB(TABLEname, StartTime, argstr, rate, split_num, match_time, msg, Mor
 
         if LastTimeStamp != (int(match_time) // split_num)*split_num:
             calc.wma_write(argstr, TABLEname)
+            calc.wma_dow(argstr, TABLEname)
             argstr.cur.execute("INSERT INTO "+TABLEname+" VALUES((SELECT MAX(id)+1 from "+TABLEname+"),%s,%s,%s,%s,%s,%s)", (StartTime, msg["tick"]["instrument"], rate, rate ,rate, rate,))
             argstr.conn.commit()
 

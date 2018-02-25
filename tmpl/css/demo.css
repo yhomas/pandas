@@ -10,21 +10,28 @@
 	font-style: normal;
 }
 
+#chartview {
+    z-index: -1;
+    }
+
 body {
-	background: #34495e;
+	background: #ffffff;
+	//background: #34495e;
 }
 
 .container > header,
 .codrops-top {
-	color: #fff;
+	color: #74818e;
 	font-family: 'Lato', Arial, sans-serif;
 }
 
 .container > header {
+    z-index: -1;
 	margin: 0 auto;
 	padding: 12em 2em;
 	padding-left: 370px;
-	background: rgba(0,0,0,0.05);
+	//background: rgba(0,0,0,0.05);
+	background: rgba(0,0,0,0);
 }
 
 .container > header a {
